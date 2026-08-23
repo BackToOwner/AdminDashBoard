@@ -172,14 +172,7 @@ export default function App() {
           )}
 
           {dashboard.activeView === 'settings' && (
-            <SettingsView 
-              categories={categoryCtrl.categories}
-              items={reportCtrl.reports}
-              onAddCategory={categoryCtrl.addCategory}
-              onUpdateCategory={categoryCtrl.updateCategory}
-              onDeleteCategory={categoryCtrl.deleteCategory}
-              onShowToast={notifCtrl.showToast} 
-            />
+            <SettingsView onShowToast={notifCtrl.showToast} />
           )}
         </main>
       </div>
