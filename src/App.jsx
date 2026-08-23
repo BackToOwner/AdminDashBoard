@@ -1,4 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { 
+  useDashboardController,
+  useReportController,
+  useCategoryController,
+  useMatchController,
+  useNotificationController
+} from './controllers';
+
+// Views & Presentational Components
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import Toast from './components/Toast';
@@ -7,6 +16,7 @@ import VerifyMatchModal from './components/VerifyMatchModal';
 import BroadcastModal from './components/BroadcastModal';
 import CategoryManager from './components/CategoryManager';
 
+// Page Views
 import DashboardView from './views/DashboardView';
 import ItemsListView from './views/ItemsListView';
 import MatchEngineView from './views/MatchEngineView';
@@ -15,196 +25,110 @@ import UsersView from './views/UsersView';
 import AnalyticsView from './views/AnalyticsView';
 import SettingsView from './views/SettingsView';
 
-import { initialStats, initialReports, aiMatchPairs, notificationsList, categoriesList } from './data/mockData';
-
+/**
+ * App Component - MVC Presentation Entrypoint
+ * Wires Controller business logic with View presentation components.
+ */
 export default function App() {
-  // Navigation & UI state
-  const [activeView, setActiveView] = useState('dashboard');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [globalSearch, setGlobalSearch] = useState('');
-  const [itemsInitialFilter, setItemsInitialFilter] = useState('all');
+  // Initialize Domain Controllers (C)
+  const dashboard = useDashboardController();
+  const reportCtrl = useReportController();
+  const categoryCtrl = useCategoryController();
+  const matchCtrl = useMatchController();
+  const notifCtrl = useNotificationController();
 
-  // Core Data States (All submitted by mobile users & finders)
-  const [stats, setStats] = useState(initialStats);
-  const [items, setItems] = useState(initialReports);
-  const [categories, setCategories] = useState(categoriesList);
-  const [matchPairs, setMatchPairs] = useState(aiMatchPairs);
-  const [notifications, setNotifications] = useState(notificationsList);
-  const [toasts, setToasts] = useState([]);
-
-  // Modals state
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [verifyMatchPair, setVerifyMatchPair] = useState(null);
-  const [showBroadcastModal, setShowBroadcastModal] = useState(false);
-
-  // Toast Helper
-  const showToast = ({ title, message, type = 'success' }) => {
-    const id = Date.now().toString();
-    setToasts(prev => [...prev, { id, title, message, type }]);
-    setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id));
-    }, 4500);
-  };
-
-  const dismissToast = (id) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  };
-
-  // Category CRUD Handlers
-  const handleAddCategory = (newCategory) => {
-    setCategories(prev => [...prev, newCategory]);
-  };
-
-  const handleUpdateCategory = (updatedCategory) => {
-    setCategories(prev => prev.map(cat => cat.id === updatedCategory.id ? updatedCategory : cat));
-  };
-
-  const handleDeleteCategory = (categoryId) => {
-    setCategories(prev => prev.filter(cat => cat.id !== categoryId));
-  };
-
-  // Action: Update item status (e.g., mark returned to owner)
-  const handleUpdateItemStatus = (itemId, newStatus) => {
-    setItems(prev => prev.map(item => {
-      if (item.id === itemId) {
-        return { ...item, status: newStatus };
-      }
-      return item;
-    }));
-
+  // Controller Orchestration Handlers
+  const handleResolveCase = (reportId, newStatus) => {
+    reportCtrl.updateReportStatus(reportId, newStatus);
     if (newStatus === 'returned') {
-      setStats(prev => ({
-        ...prev,
-        itemsReturned: prev.itemsReturned + 1,
-        activeCases: Math.max(0, prev.activeCases - 1)
-      }));
-      showToast({
+      dashboard.recordItemResolved();
+      notifCtrl.showToast({
         title: 'Case Successfully Resolved! 🎉',
-        message: `Item has been verified and returned to owner. Case closed.`,
+        message: 'Item has been verified and returned to owner. Case closed.',
         type: 'success'
       });
     } else {
-      showToast({
+      notifCtrl.showToast({
         title: 'Status Updated',
         message: `Case status set to ${newStatus.replace('_', ' ')}.`,
         type: 'info'
       });
     }
+  };
 
-    if (selectedItem && selectedItem.id === itemId) {
-      setSelectedItem(prev => ({ ...prev, status: newStatus }));
+  const handleVerifyMatch = (matchId) => {
+    const approvedMatch = matchCtrl.approveMatch(matchId);
+    if (approvedMatch) {
+      reportCtrl.updateReportStatus(approvedMatch.lostItem.id, 'matched');
+      reportCtrl.updateReportStatus(approvedMatch.foundItem.id, 'matched');
+      dashboard.recordMatchApproved();
+      notifCtrl.showToast({
+        title: 'Match Verified & Reconciled! ✨',
+        message: 'Owner and Finder connected. Handover QR and alerts dispatched.',
+        type: 'match'
+      });
     }
   };
 
-  // Action: Verify AI Match
-  const handleConfirmMatch = (matchId) => {
-    const pair = matchPairs.find(p => p.id === matchId);
-    if (!pair) return;
-
-    // Update match pairs and item statuses
-    setMatchPairs(prev => prev.filter(p => p.id !== matchId));
-    setItems(prev => prev.map(item => {
-      if (item.id === pair.foundItem.id || item.id === pair.lostItem.id) {
-        return { ...item, matched: true, status: 'matched' };
-      }
-      return item;
-    }));
-
-    setStats(prev => ({
-      ...prev,
-      pendingMatches: Math.max(0, prev.pendingMatches - 1)
-    }));
-
-    showToast({
-      title: 'Match Verified & Reconciled! ✨',
-      message: `Owner and Finder connected. Handover QR and alerts dispatched.`,
-      type: 'match'
-    });
-  };
-
-  // Action: Dispatch Geo-Broadcast
-  const handleSendBroadcast = ({ title, message, radius }) => {
-    showToast({
-      title: 'Geo-Alert Dispatched 📡',
-      message: `Broadcasted to active mobile devices within ${radius}km radius.`,
-      type: 'info'
-    });
-    setNotifications(prev => [
-      {
-        id: `NOTIF-${Date.now()}`,
-        title: `Geo-Alert: ${title}`,
-        message: `${message} (${radius}km radius)`,
-        time: 'Just now',
-        read: false,
-        type: 'location'
-      },
-      ...prev
-    ]);
-  };
-
-  // Action: Mark notification read
-  const handleMarkNotificationRead = (notifId) => {
-    setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
-  };
-
   const handleFilterItemsByType = (typeKey) => {
-    setItemsInitialFilter(typeKey);
-    setActiveView('items');
+    reportCtrl.setActiveFilterType(typeKey);
+    dashboard.setActiveView('items');
   };
 
   return (
     <div className="app-container">
-      {/* Clean White Sidebar Navigation */}
+      {/* View: Sidebar Navigation */}
       <Sidebar
-        activeView={activeView}
-        setActiveView={setActiveView}
-        collapsed={sidebarCollapsed}
-        setCollapsed={setSidebarCollapsed}
+        activeView={dashboard.activeView}
+        setActiveView={dashboard.setActiveView}
+        collapsed={dashboard.sidebarCollapsed}
+        setCollapsed={dashboard.setSidebarCollapsed}
         counts={{
-          activeCases: stats.activeCases,
-          pendingMatches: stats.pendingMatches,
-          categoryCount: categories.filter(c => c.id !== 'all').length
+          activeCases: dashboard.stats.activeCases,
+          pendingMatches: dashboard.stats.pendingMatches,
+          categoryCount: categoryCtrl.categories.filter(c => c.id !== 'all').length
         }}
       />
 
       {/* Main Content Area */}
       <div className="main-content-wrapper">
-        {/* Topbar */}
+        {/* View: Topbar */}
         <Topbar
-          searchQuery={globalSearch}
-          setSearchQuery={setGlobalSearch}
-          notifications={notifications}
-          onMarkNotificationRead={handleMarkNotificationRead}
-          onOpenBroadcastModal={() => setShowBroadcastModal(true)}
+          searchQuery={dashboard.globalSearch}
+          setSearchQuery={dashboard.setGlobalSearch}
+          notifications={notifCtrl.notifications}
+          onMarkNotificationRead={notifCtrl.markNotificationRead}
+          onOpenBroadcastModal={() => notifCtrl.setShowBroadcastModal(true)}
         />
 
-        {/* Dynamic View Body */}
+        {/* Dynamic Page Views (V) */}
         <main className="page-body">
-          {activeView === 'dashboard' && (
+          {dashboard.activeView === 'dashboard' && (
             <DashboardView
-              stats={stats}
-              items={items}
-              matchPairs={matchPairs}
-              onSelectItem={(item) => setSelectedItem(item)}
-              onOpenMatchEngine={() => setActiveView('matches')}
-              onVerifyMatch={(pair) => setVerifyMatchPair(pair)}
-              onViewAllItems={() => { setItemsInitialFilter('all'); setActiveView('items'); }}
-              onViewFullMap={() => setActiveView('map')}
-              onOpenBroadcastModal={() => setShowBroadcastModal(true)}
+              stats={dashboard.stats}
+              items={reportCtrl.reports}
+              matchPairs={matchCtrl.matchPairs}
+              onSelectItem={(item) => reportCtrl.setSelectedReport(item)}
+              onOpenMatchEngine={() => dashboard.setActiveView('matches')}
+              onVerifyMatch={(pair) => matchCtrl.setActiveVerificationPair(pair)}
+              onViewAllItems={() => { reportCtrl.setActiveFilterType('all'); dashboard.setActiveView('items'); }}
+              onViewFullMap={() => dashboard.setActiveView('map')}
+              onOpenBroadcastModal={() => notifCtrl.setShowBroadcastModal(true)}
               onFilterItemsByType={handleFilterItemsByType}
             />
           )}
 
-          {activeView === 'items' && (
+          {dashboard.activeView === 'items' && (
             <ItemsListView
-              items={items}
-              categories={categories}
-              onSelectItem={(item) => setSelectedItem(item)}
-              initialType={itemsInitialFilter}
+              items={reportCtrl.reports}
+              categories={categoryCtrl.categories}
+              onSelectItem={(item) => reportCtrl.setSelectedReport(item)}
+              initialType={reportCtrl.activeFilterType}
+              onExportCsv={reportCtrl.exportReportsToCsv}
             />
           )}
 
-          {activeView === 'categories' && (
+          {dashboard.activeView === 'categories' && (
             <div className="animate-fade-in">
               <div style={{ marginBottom: '24px' }}>
                 <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0F172A' }}>Category Management</h1>
@@ -214,80 +138,78 @@ export default function App() {
               </div>
 
               <CategoryManager
-                categories={categories}
-                items={items}
-                onAddCategory={handleAddCategory}
-                onUpdateCategory={handleUpdateCategory}
-                onDeleteCategory={handleDeleteCategory}
-                onShowToast={showToast}
+                categories={categoryCtrl.categories}
+                items={reportCtrl.reports}
+                onAddCategory={categoryCtrl.addCategory}
+                onUpdateCategory={categoryCtrl.updateCategory}
+                onDeleteCategory={categoryCtrl.deleteCategory}
+                onShowToast={notifCtrl.showToast}
               />
             </div>
           )}
 
-          {activeView === 'matches' && (
+          {dashboard.activeView === 'matches' && (
             <MatchEngineView
-              matchPairs={matchPairs}
-              onVerifyMatch={(pair) => setVerifyMatchPair(pair)}
+              matchPairs={matchCtrl.matchPairs}
+              onVerifyMatch={(pair) => matchCtrl.setActiveVerificationPair(pair)}
             />
           )}
 
-          {activeView === 'map' && (
+          {dashboard.activeView === 'map' && (
             <LiveMapView
-              items={items}
-              onSelectItem={(item) => setSelectedItem(item)}
-              onOpenBroadcastModal={() => setShowBroadcastModal(true)}
+              items={reportCtrl.reports}
+              onSelectItem={(item) => reportCtrl.setSelectedReport(item)}
+              onOpenBroadcastModal={() => notifCtrl.setShowBroadcastModal(true)}
             />
           )}
 
-          {activeView === 'users' && (
+          {dashboard.activeView === 'users' && (
             <UsersView />
           )}
 
-          {activeView === 'analytics' && (
+          {dashboard.activeView === 'analytics' && (
             <AnalyticsView />
           )}
 
-          {activeView === 'settings' && (
+          {dashboard.activeView === 'settings' && (
             <SettingsView 
-              categories={categories}
-              items={items}
-              onAddCategory={handleAddCategory}
-              onUpdateCategory={handleUpdateCategory}
-              onDeleteCategory={handleDeleteCategory}
-              onShowToast={showToast} 
+              categories={categoryCtrl.categories}
+              items={reportCtrl.reports}
+              onAddCategory={categoryCtrl.addCategory}
+              onUpdateCategory={categoryCtrl.updateCategory}
+              onDeleteCategory={categoryCtrl.deleteCategory}
+              onShowToast={notifCtrl.showToast} 
             />
           )}
         </main>
       </div>
 
-      {/* Item Detail Inspector Modal */}
-      {selectedItem && (
+      {/* Modal Views (V) */}
+      {reportCtrl.selectedReport && (
         <ItemDetailModal
-          item={selectedItem}
-          onClose={() => setSelectedItem(null)}
-          onUpdateStatus={handleUpdateItemStatus}
+          item={reportCtrl.selectedReport}
+          onClose={() => reportCtrl.setSelectedReport(null)}
+          onUpdateStatus={handleResolveCase}
         />
       )}
 
-      {/* Verify AI Match Modal */}
-      {verifyMatchPair && (
+      {matchCtrl.activeVerificationPair && (
         <VerifyMatchModal
-          matchPair={verifyMatchPair}
-          onClose={() => setVerifyMatchPair(null)}
-          onConfirmMatch={handleConfirmMatch}
+          matchPair={matchCtrl.activeVerificationPair}
+          onClose={() => matchCtrl.setActiveVerificationPair(null)}
+          onConfirmMatch={handleVerifyMatch}
         />
       )}
 
-      {/* Broadcast Push Alert Modal */}
-      {showBroadcastModal && (
+      {notifCtrl.showBroadcastModal && (
         <BroadcastModal
-          onClose={() => setShowBroadcastModal(false)}
-          onSendBroadcast={handleSendBroadcast}
+          onClose={() => notifCtrl.setShowBroadcastModal(false)}
+          onSendBroadcast={notifCtrl.dispatchGeoBroadcast}
         />
       )}
 
-      {/* Floating Toast Notification Center */}
-      <Toast toasts={toasts} onDismiss={dismissToast} />
+      {/* Floating Feedback View */}
+      <Toast toasts={notifCtrl.toasts} onDismiss={notifCtrl.dismissToast} />
     </div>
   );
 }
