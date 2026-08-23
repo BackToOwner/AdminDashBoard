@@ -1,0 +1,297 @@
+/* ==========================================================================
+   Interactive Mobile App Simulator Styles
+   Matching exact UI of BackToOwner mobile app screenshots
+   ========================================================================== */
+
+.mobile-sim-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 440px;
+  background: #0B162A;
+  background: linear-gradient(180deg, #071325 0%, #0A1C36 100%);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: -15px 0 45px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.sim-drawer-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #FFFFFF;
+}
+
+.sim-screen-switch-tabs {
+  display: flex;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+  gap: 2px;
+}
+
+.sim-tab-btn {
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #94A3B8;
+  transition: all 0.2s ease;
+}
+
+.sim-tab-btn.active {
+  background: #00D2B4;
+  color: #07152B;
+}
+
+.sim-body-viewport {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+/* Phone Device Chassis */
+.phone-chassis {
+  width: 360px;
+  min-height: 720px;
+  background: #FFFFFF;
+  border-radius: 44px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5), 0 0 0 10px #1E293B, 0 0 0 12px rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Phone Dynamic Island / Notch */
+.phone-notch-bar {
+  height: 28px;
+  background: #0A1931;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 600;
+  z-index: 50;
+}
+
+.phone-notch-pill {
+  width: 90px;
+  height: 18px;
+  background: #000000;
+  border-radius: var(--radius-pill);
+}
+
+/* Mobile Screens Content */
+.mobile-app-content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  background: #F4F7FC;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mobile Header Blue Gradient Section */
+.mobile-header-blue-section {
+  background: linear-gradient(180deg, #0A1931 0%, #0F3460 70%, #174E8C 100%);
+  padding: 16px 18px 24px;
+  color: #FFFFFF;
+  border-bottom-left-radius: 28px;
+  border-bottom-right-radius: 28px;
+  box-shadow: 0 10px 24px rgba(10, 25, 49, 0.2);
+}
+
+.mobile-user-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.mobile-user-greeting {
+  font-size: 11px;
+  color: #CBD5E1;
+}
+
+.mobile-user-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.mobile-search-bar {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-pill);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #E2E8F0;
+  margin-bottom: 14px;
+}
+
+.mobile-stats-row {
+  display: flex;
+  gap: 8px;
+}
+
+.mobile-stat-pill {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  padding: 8px 6px;
+  text-align: center;
+}
+
+.mobile-stat-value {
+  font-size: 13px;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.mobile-stat-title {
+  font-size: 9px;
+  color: #94A3B8;
+  margin-top: 1px;
+}
+
+/* Mobile Quick Actions (Red & Green) */
+.mobile-quick-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 16px 18px 0;
+}
+
+.mobile-action-card-lost {
+  background: var(--bto-lost-gradient);
+  border-radius: 18px;
+  padding: 14px 12px;
+  color: #FFFFFF;
+  text-align: center;
+  box-shadow: 0 6px 16px rgba(255, 82, 82, 0.3);
+}
+
+.mobile-action-card-found {
+  background: var(--bto-found-gradient);
+  border-radius: 18px;
+  padding: 14px 12px;
+  color: #FFFFFF;
+  text-align: center;
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+}
+
+/* Mobile Nearby Items Section */
+.mobile-nearby-section {
+  padding: 16px 18px 0;
+}
+
+.mobile-section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.mobile-section-heading {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0F172A;
+}
+
+.mobile-link-blue {
+  font-size: 11px;
+  font-weight: 700;
+  color: #0077EE;
+}
+
+.mobile-radar-box {
+  height: 120px;
+  background: #EAF3FC;
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #D1E5F7;
+}
+
+/* Mobile Recent Reports Feed */
+.mobile-reports-section {
+  padding: 16px 18px 24px;
+}
+
+.mobile-filter-pills-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.mobile-filter-chip {
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  background: #E2E8F0;
+  color: #475569;
+}
+
+.mobile-filter-chip.active {
+  background: #0077EE;
+  color: #FFFFFF;
+}
+
+.mobile-report-card {
+  background: #FFFFFF;
+  border-radius: 16px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* Mobile Bottom Navigation Bar */
+.mobile-bottom-nav {
+  height: 58px;
+  background: #FFFFFF;
+  border-top: 1px solid #E2E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 10px;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.mobile-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: #94A3B8;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.mobile-nav-btn.active {
+  color: #0077EE;
+}

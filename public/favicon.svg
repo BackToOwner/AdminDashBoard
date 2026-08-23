@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00A3FF" />
+      <stop offset="60%" stop-color="#0F4C81" />
+      <stop offset="100%" stop-color="#0A1E4A" />
+    </linearGradient>
+    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00E5BE" />
+      <stop offset="100%" stop-color="#00A896" />
+    </linearGradient>
+  </defs>
+  <!-- Background Stylized B -->
+  <path d="M 25 10 L 60 10 C 76 10 88 20 88 34 C 88 43 82 50 74 53 C 85 57 92 66 92 78 C 92 92 78 102 60 102 L 25 102 Z" fill="url(#blueGrad)" />
+  <path d="M 42 26 L 56 26 C 64 26 70 30 70 37 C 70 44 64 48 56 48 L 42 48 Z" fill="#FFFFFF" />
+  <path d="M 42 62 L 58 62 C 67 62 73 67 73 76 C 73 85 66 90 57 90 L 42 90 Z" fill="#FFFFFF" />
+
+  <!-- Map Pin -->
+  <path d="M 50 20 C 44 20 39 25 39 31 C 39 39 50 48 50 48 C 50 48 61 39 61 31 C 61 25 56 20 50 20 Z" fill="#0D2B66"/>
+  <circle cx="50" cy="30" r="3.5" fill="#FFFFFF" />
+
+  <!-- Shopping/Gift Bag -->
+  <rect x="40" y="44" width="20" height="17" rx="3.5" fill="url(#tealGrad)" />
+  <path d="M 45 44 C 45 40 55 40 55 44" stroke="#00E5BE" stroke-width="2.5" fill="none" stroke-linecap="round" />
+  <!-- Small Tag -->
+  <path d="M 54 48 L 57 48 L 58 53 L 55 53 Z" fill="#FFFFFF" opacity="0.9" />
+
+  <!-- White Hand Supporting Bag -->
+  <path d="M 33 67 C 36 62 44 63 50 63 C 58 63 64 61 68 56 C 68 62 62 67 55 69 C 48 70 41 70 36 73 C 33 75 30 79 26 84 C 28 78 30 71 33 67 Z" fill="#FFFFFF" />
+</svg>
