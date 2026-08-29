@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, TrendingUp, Clock, Award, ShieldCheck, MapPin, Download } from 'lucide-react';
+import { Clock, Award, ShieldCheck, Download } from 'lucide-react';
 import AnalyticsCharts from '../components/AnalyticsCharts';
 import { initialStats } from '../data/mockData';
 

@@ -3,7 +3,6 @@ import {
   LayoutDashboard, 
   PackageSearch, 
   Sparkles, 
-  MapPin, 
   Users, 
   BarChart3, 
   Settings, 
@@ -26,7 +25,6 @@ export default function Sidebar({
     { id: 'items', label: 'Lost & Found Reports', icon: PackageSearch, badge: counts.activeCases, badgeColor: 'teal' },
     { id: 'matches', label: 'AI Smart Matches', icon: Sparkles, badge: counts.pendingMatches, badgeColor: 'coral' },
     { id: 'categories', label: 'Category Manager', icon: Layers, badge: counts.categoryCount, badgeColor: 'teal' },
-    { id: 'map', label: 'Hotspot Radar Map', icon: MapPin },
     { id: 'users', label: 'Registered Users & Finders', icon: Users },
     { id: 'analytics', label: 'Analytics & Insights', icon: BarChart3 },
     { id: 'settings', label: 'System Settings', icon: Settings }

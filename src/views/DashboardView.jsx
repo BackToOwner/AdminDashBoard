@@ -2,7 +2,6 @@ import React from 'react';
 import { Sparkles, Radio, ShieldCheck, ArrowRight } from 'lucide-react';
 import StatsOverview from '../components/StatsOverview';
 import QuickActions from '../components/QuickActions';
-import InteractiveMap from '../components/InteractiveMap';
 import RecentReports from '../components/RecentReports';
 import MatchSuggestions from '../components/MatchSuggestions';
 import AnalyticsCharts from '../components/AnalyticsCharts';
@@ -16,7 +15,6 @@ export default function DashboardView({
   onOpenMatchEngine,
   onVerifyMatch,
   onViewAllItems,
-  onViewFullMap,
   onOpenBroadcastModal,
   onFilterItemsByType
 }) {
@@ -60,7 +58,7 @@ export default function DashboardView({
         foundCount={items.filter(i => i.type === 'found').length * 150 + 11}
       />
 
-      {/* 3. Two Column Grid: Recent User Reports & Interactive Radar Map */}
+      {/* 3. Two Column Grid: Recent User Reports & AI Match Hub */}
       <div className="dashboard-grid-2col">
         {/* Left Column: Recent Reports Feed */}
         <div>
@@ -71,14 +69,8 @@ export default function DashboardView({
           />
         </div>
 
-        {/* Right Column: Interactive Radar Map & AI Match Widget */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <InteractiveMap 
-            items={items} 
-            onSelectItem={onSelectItem} 
-            onViewFullMap={onViewFullMap} 
-          />
-
+        {/* Right Column: AI Smart Match Hub */}
+        <div>
           <MatchSuggestions 
             matchPairs={matchPairs} 
             onVerifyMatch={onVerifyMatch} 

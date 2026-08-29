@@ -20,7 +20,6 @@ import CategoryManager from './components/CategoryManager';
 import DashboardView from './views/DashboardView';
 import ItemsListView from './views/ItemsListView';
 import MatchEngineView from './views/MatchEngineView';
-import LiveMapView from './views/LiveMapView';
 import UsersView from './views/UsersView';
 import AnalyticsView from './views/AnalyticsView';
 import SettingsView from './views/SettingsView';
@@ -112,7 +111,6 @@ export default function App() {
               onOpenMatchEngine={() => dashboard.setActiveView('matches')}
               onVerifyMatch={(pair) => matchCtrl.setActiveVerificationPair(pair)}
               onViewAllItems={() => { reportCtrl.setActiveFilterType('all'); dashboard.setActiveView('items'); }}
-              onViewFullMap={() => dashboard.setActiveView('map')}
               onOpenBroadcastModal={() => notifCtrl.setShowBroadcastModal(true)}
               onFilterItemsByType={handleFilterItemsByType}
             />
@@ -152,14 +150,6 @@ export default function App() {
             <MatchEngineView
               matchPairs={matchCtrl.matchPairs}
               onVerifyMatch={(pair) => matchCtrl.setActiveVerificationPair(pair)}
-            />
-          )}
-
-          {dashboard.activeView === 'map' && (
-            <LiveMapView
-              items={reportCtrl.reports}
-              onSelectItem={(item) => reportCtrl.setSelectedReport(item)}
-              onOpenBroadcastModal={() => notifCtrl.setShowBroadcastModal(true)}
             />
           )}
 
