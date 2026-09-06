@@ -13,13 +13,16 @@ import {
 import Logo from '../assets/Logo';
 import '../styles/sidebar.css';
 
-export default function Sidebar({ 
-  activeView, 
-  setActiveView, 
-  collapsed, 
+export default function Sidebar({
+  activeView,
+  setActiveView,
+  collapsed,
   setCollapsed,
-  counts
+  counts,
+  admin
 }) {
+  const adminName = admin?.name || 'Admin';
+  const adminRole = (admin?.role || 'admin').replace('_', ' ');
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard Overview', icon: LayoutDashboard },
     { id: 'items', label: 'Lost & Found Reports', icon: PackageSearch, badge: counts.activeCases, badgeColor: 'teal' },
@@ -81,15 +84,15 @@ export default function Sidebar({
 
       {/* Admin Profile Footer */}
       <div className="sidebar-footer">
-        <img 
-          src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80" 
-          alt="Ahmed Khalid" 
-          className="admin-avatar-mini" 
+        <img
+          src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80"
+          alt={adminName}
+          className="admin-avatar-mini"
         />
         {!collapsed && (
           <div className="admin-info-text">
-            <div className="admin-name">Ahmed Khalid</div>
-            <div className="admin-role-badge">Super Admin</div>
+            <div className="admin-name">{adminName}</div>
+            <div className="admin-role-badge" style={{ textTransform: 'capitalize' }}>{adminRole}</div>
           </div>
         )}
       </div>

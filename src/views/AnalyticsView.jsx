@@ -1,9 +1,8 @@
 import React from 'react';
 import { Clock, Award, ShieldCheck, Download } from 'lucide-react';
 import AnalyticsCharts from '../components/AnalyticsCharts';
-import { initialStats } from '../data/mockData';
 
-export default function AnalyticsView() {
+export default function AnalyticsView({ stats, breakdown, categories }) {
   return (
     <div className="animate-fade-in">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
@@ -27,30 +26,30 @@ export default function AnalyticsView() {
             <Clock size={20} />
             <span style={{ fontSize: '13px', fontWeight: 700 }}>Average Recovery Time</span>
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A' }}>{initialStats.avgResolutionTime}</div>
-          <div style={{ fontSize: '12px', color: '#059669', marginTop: '4px', fontWeight: 600 }}>↓ 3.2 hrs faster than last quarter</div>
+          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A' }}>{stats.avgResolutionTime}</div>
+          <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '4px' }}>Not yet tracked historically by the backend</div>
         </div>
 
         <div className="bto-card" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#F59E0B', marginBottom: '8px' }}>
             <Award size={20} />
-            <span style={{ fontSize: '13px', fontWeight: 700 }}>Total Rewards Distributed</span>
+            <span style={{ fontSize: '13px', fontWeight: 700 }}>Total Rewards Offered</span>
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A' }}>{initialStats.totalRewardsPaid}</div>
-          <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>100% secured via Stripe & Escrow</div>
+          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A' }}>{stats.totalRewardsPaid}</div>
+          <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>Sum of reward amounts across all reports</div>
         </div>
 
         <div className="bto-card" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10B981', marginBottom: '8px' }}>
             <ShieldCheck size={20} />
-            <span style={{ fontSize: '13px', fontWeight: 700 }}>False Claim Rejection Rate</span>
+            <span style={{ fontSize: '13px', fontWeight: 700 }}>Recovery Success Rate</span>
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A' }}>99.8%</div>
-          <div style={{ fontSize: '12px', color: '#059669', marginTop: '4px', fontWeight: 600 }}>Zero fraudulent item handovers</div>
+          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A' }}>{stats.successRate}%</div>
+          <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>Returned reports ÷ total reports</div>
         </div>
       </div>
 
-      <AnalyticsCharts />
+      <AnalyticsCharts breakdown={breakdown} categories={categories} />
     </div>
   );
 }
