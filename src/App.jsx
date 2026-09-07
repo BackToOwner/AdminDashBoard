@@ -1,13 +1,16 @@
 import React from 'react';
-import { 
+import { Loader2 } from 'lucide-react';
+import {
+  useAuthController,
   useDashboardController,
   useReportController,
   useCategoryController,
   useMatchController,
-  useNotificationController
+  useNotificationController,
+  useUserController
 } from './controllers';
 
-// Views & Presentational Components
+// View & Presentational Components
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import Toast from './components/Toast';
@@ -17,6 +20,7 @@ import BroadcastModal from './components/BroadcastModal';
 import CategoryManager from './components/CategoryManager';
 
 // Page Views
+import LoginView from './views/LoginView';
 import DashboardView from './views/DashboardView';
 import ItemsListView from './views/ItemsListView';
 import MatchEngineView from './views/MatchEngineView';
@@ -26,52 +30,97 @@ import SettingsView from './views/SettingsView';
 
 /**
  * App Component - MVC Presentation Entrypoint
- * Wires Controller business logic with View presentation components.
+ * Wires Controller business logic (backed by the BackToOwner Admin API) with
+ * View presentation components.
  */
 export default function App() {
+  const auth = useAuthController();
+
+  // Gate everything else behind a signed-in admin session so we don't fire
+  // authenticated API calls (and get 401s) before login.
+  if (auth.checkingSession) {
+    return <FullScreenLoader label="Restoring your session…" />;
+  }
+  if (!auth.isAuthenticated) {
+    return <LoginView onLogin={auth.login} loginError={auth.loginError} loggingIn={auth.loggingIn} />;
+  }
+
+  return <AuthenticatedApp auth={auth} />;
+}
+
+function FullScreenLoader({ label }) {
+  return (
+    <div style={{ minHeight: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', color: '#64748B' }}>
+      <Loader2 size={28} className="animate-spin" color="#00A896" />
+      <span style={{ fontSize: '13px', fontWeight: 600 }}>{label}</span>
+    </div>
+  );
+}
+
+function AuthenticatedApp({ auth }) {
   // Initialize Domain Controllers (C)
   const dashboard = useDashboardController();
   const reportCtrl = useReportController();
   const categoryCtrl = useCategoryController();
   const matchCtrl = useMatchController();
   const notifCtrl = useNotificationController();
+  const userCtrl = useUserController();
 
   // Controller Orchestration Handlers
-  const handleResolveCase = (reportId, newStatus) => {
-    reportCtrl.updateReportStatus(reportId, newStatus);
-    if (newStatus === 'returned') {
-      dashboard.recordItemResolved();
-      notifCtrl.showToast({
-        title: 'Case Successfully Resolved! 🎉',
-        message: 'Item has been verified and returned to owner. Case closed.',
-        type: 'success'
-      });
-    } else {
-      notifCtrl.showToast({
-        title: 'Status Updated',
-        message: `Case status set to ${newStatus.replace('_', ' ')}.`,
-        type: 'info'
-      });
+  const handleResolveCase = async (reportId, newStatus) => {
+    try {
+      await reportCtrl.updateReportStatus(reportId, newStatus);
+      dashboard.refreshStats();
+      if (newStatus === 'returned') {
+        notifCtrl.showToast({
+          title: 'Case Successfully Resolved! 🎉',
+          message: 'Item has been verified and returned to owner. Case closed.',
+          type: 'success'
+        });
+      } else {
+        notifCtrl.showToast({
+          title: 'Status Updated',
+          message: `Case status set to ${newStatus.replace('_', ' ')}.`,
+          type: 'info'
+        });
+      }
+    } catch (err) {
+      notifCtrl.showToast({ title: 'Update Failed', message: err.message, type: 'alert' });
     }
   };
 
-  const handleVerifyMatch = (matchId) => {
-    const approvedMatch = matchCtrl.approveMatch(matchId);
-    if (approvedMatch) {
-      reportCtrl.updateReportStatus(approvedMatch.lostItem.id, 'matched');
-      reportCtrl.updateReportStatus(approvedMatch.foundItem.id, 'matched');
-      dashboard.recordMatchApproved();
-      notifCtrl.showToast({
-        title: 'Match Verified & Reconciled! ✨',
-        message: 'Owner and Finder connected. Handover QR and alerts dispatched.',
-        type: 'match'
-      });
+  const handleVerifyMatch = async (matchId) => {
+    try {
+      const approvedMatch = await matchCtrl.approveMatch(matchId);
+      if (approvedMatch) {
+        await reportCtrl.refetchReports();
+        dashboard.recordMatchApproved();
+        notifCtrl.showToast({
+          title: 'Match Verified & Reconciled! ✨',
+          message: 'Owner and Finder connected. Handover QR and alerts dispatched.',
+          type: 'match'
+        });
+      }
+    } catch (err) {
+      notifCtrl.showToast({ title: 'Verification Failed', message: err.message, type: 'alert' });
     }
   };
 
   const handleFilterItemsByType = (typeKey) => {
     reportCtrl.setActiveFilterType(typeKey);
     dashboard.setActiveView('items');
+  };
+
+  const handleAddCategory = async (categoryData) => {
+    await categoryCtrl.addCategory(categoryData);
+  };
+
+  const handleUpdateCategory = async (categoryData) => {
+    await categoryCtrl.updateCategory(categoryData);
+  };
+
+  const handleDeleteCategory = async (categoryId) => {
+    await categoryCtrl.deleteCategory(categoryId);
   };
 
   return (
@@ -82,6 +131,7 @@ export default function App() {
         setActiveView={dashboard.setActiveView}
         collapsed={dashboard.sidebarCollapsed}
         setCollapsed={dashboard.setSidebarCollapsed}
+        admin={auth.admin}
         counts={{
           activeCases: dashboard.stats.activeCases,
           pendingMatches: dashboard.stats.pendingMatches,
@@ -98,6 +148,8 @@ export default function App() {
           notifications={notifCtrl.notifications}
           onMarkNotificationRead={notifCtrl.markNotificationRead}
           onOpenBroadcastModal={() => notifCtrl.setShowBroadcastModal(true)}
+          admin={auth.admin}
+          onLogout={auth.logout}
         />
 
         {/* Dynamic Page Views (V) */}
@@ -113,6 +165,8 @@ export default function App() {
               onViewAllItems={() => { reportCtrl.setActiveFilterType('all'); dashboard.setActiveView('items'); }}
               onOpenBroadcastModal={() => notifCtrl.setShowBroadcastModal(true)}
               onFilterItemsByType={handleFilterItemsByType}
+              breakdown={dashboard.breakdown}
+              categories={categoryCtrl.categories}
             />
           )}
 
@@ -138,9 +192,9 @@ export default function App() {
               <CategoryManager
                 categories={categoryCtrl.categories}
                 items={reportCtrl.reports}
-                onAddCategory={categoryCtrl.addCategory}
-                onUpdateCategory={categoryCtrl.updateCategory}
-                onDeleteCategory={categoryCtrl.deleteCategory}
+                onAddCategory={handleAddCategory}
+                onUpdateCategory={handleUpdateCategory}
+                onDeleteCategory={handleDeleteCategory}
                 onShowToast={notifCtrl.showToast}
               />
             </div>
@@ -154,11 +208,11 @@ export default function App() {
           )}
 
           {dashboard.activeView === 'users' && (
-            <UsersView />
+            <UsersView users={userCtrl.users} loading={userCtrl.loading} />
           )}
 
           {dashboard.activeView === 'analytics' && (
-            <AnalyticsView />
+            <AnalyticsView stats={dashboard.stats} breakdown={dashboard.breakdown} categories={categoryCtrl.categories} />
           )}
 
           {dashboard.activeView === 'settings' && (

@@ -11,17 +11,21 @@ import {
 } from 'lucide-react';
 import '../styles/topbar.css';
 
-export default function Topbar({ 
-  searchQuery, 
-  setSearchQuery, 
+export default function Topbar({
+  searchQuery,
+  setSearchQuery,
   notifications,
   onMarkNotificationRead,
-  onOpenBroadcastModal
+  onOpenBroadcastModal,
+  admin,
+  onLogout
 }) {
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [showAdminMenu, setShowAdminMenu] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  const adminName = admin?.name || 'Admin';
+  const adminInitial = adminName.charAt(0).toUpperCase();
 
   return (
     <header className="bto-topbar">
@@ -30,7 +34,7 @@ export default function Topbar({
         <div className="topbar-greeting-box">
           <div className="topbar-greeting">
             <span>Good morning 👋</span>
-            <span style={{ color: '#0077EE' }}>Ahmed Khalid</span>
+            <span style={{ color: '#0077EE' }}>{adminName}</span>
           </div>
           <span className="topbar-subtitle">Admin Oversight & Verification Desk</span>
         </div>
@@ -133,10 +137,10 @@ export default function Topbar({
             className="topbar-admin-profile"
             onClick={() => setShowAdminMenu(!showAdminMenu)}
           >
-            <div className="admin-avatar-top">A</div>
+            <div className="admin-avatar-top">{adminInitial}</div>
             <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-              <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#0A1931' }}>Ahmed Khalid</span>
-              <span style={{ fontSize: '10px', color: '#00D2B4', fontWeight: 700 }}>SUPER ADMIN</span>
+              <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#0A1931' }}>{adminName}</span>
+              <span style={{ fontSize: '10px', color: '#00D2B4', fontWeight: 700 }}>{(admin?.role || 'admin').replace('_', ' ').toUpperCase()}</span>
             </div>
             <ChevronDown size={14} color="#64748B" />
           </div>
@@ -157,24 +161,12 @@ export default function Topbar({
               }}
             >
               <div style={{ padding: '8px 12px', borderBottom: '1px solid #F1F5F9', marginBottom: '4px' }}>
-                <div style={{ fontSize: '13px', fontWeight: 700 }}>Ahmed Khalid</div>
-                <div style={{ fontSize: '11px', color: '#64748B' }}>ahmed.khalid@backtoowner.com</div>
+                <div style={{ fontSize: '13px', fontWeight: 700 }}>{adminName}</div>
+                <div style={{ fontSize: '11px', color: '#64748B' }}>{admin?.email}</div>
               </div>
-              <button 
-                style={{ width: '100%', padding: '8px 12px', textAlign: 'left', fontSize: '13px', borderRadius: '6px', color: '#334155' }}
-                onClick={() => setShowAdminMenu(false)}
-              >
-                Admin Profile
-              </button>
-              <button 
-                style={{ width: '100%', padding: '8px 12px', textAlign: 'left', fontSize: '13px', borderRadius: '6px', color: '#334155' }}
-                onClick={() => setShowAdminMenu(false)}
-              >
-                Verification Desk
-              </button>
-              <button 
+              <button
                 style={{ width: '100%', padding: '8px 12px', textAlign: 'left', fontSize: '13px', borderRadius: '6px', color: '#EF4444', fontWeight: 600 }}
-                onClick={() => setShowAdminMenu(false)}
+                onClick={() => { setShowAdminMenu(false); onLogout?.(); }}
               >
                 Sign Out
               </button>

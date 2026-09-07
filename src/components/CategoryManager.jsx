@@ -63,17 +63,23 @@ export default function CategoryManager({
     return iconObj ? iconObj.component : Package;
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!categoryToDelete) return;
     const catName = categoryToDelete.label;
-    onDeleteCategory(categoryToDelete.id);
     setCategoryToDelete(null);
-    if (onShowToast) {
-      onShowToast({
-        title: 'Category Deleted',
-        message: `Category "${catName}" has been removed from BackToOwner.`,
-        type: 'alert'
-      });
+    try {
+      await onDeleteCategory(categoryToDelete.id);
+      if (onShowToast) {
+        onShowToast({
+          title: 'Category Deleted',
+          message: `Category "${catName}" has been removed from BackToOwner.`,
+          type: 'alert'
+        });
+      }
+    } catch (err) {
+      if (onShowToast) {
+        onShowToast({ title: 'Delete Failed', message: err.message, type: 'alert' });
+      }
     }
   };
 
@@ -234,16 +240,20 @@ export default function CategoryManager({
 
       {/* Modal: Add New Category */}
       {showAddModal && (
-        <CategoryModal 
+        <CategoryModal
           onClose={() => setShowAddModal(false)}
-          onSave={(newCat) => {
-            onAddCategory(newCat);
-            if (onShowToast) {
-              onShowToast({
-                title: 'Category Created! 🎉',
-                message: `New category "${newCat.label}" is now live for mobile app users.`,
-                type: 'success'
-              });
+          onSave={async (newCat) => {
+            try {
+              await onAddCategory(newCat);
+              if (onShowToast) {
+                onShowToast({
+                  title: 'Category Created! 🎉',
+                  message: `New category "${newCat.label}" is now live for mobile app users.`,
+                  type: 'success'
+                });
+              }
+            } catch (err) {
+              if (onShowToast) onShowToast({ title: 'Create Failed', message: err.message, type: 'alert' });
             }
           }}
         />
@@ -251,17 +261,21 @@ export default function CategoryManager({
 
       {/* Modal: Edit Existing Category */}
       {editingCategory && (
-        <CategoryModal 
+        <CategoryModal
           category={editingCategory}
           onClose={() => setEditingCategory(null)}
-          onSave={(updatedCat) => {
-            onUpdateCategory(updatedCat);
-            if (onShowToast) {
-              onShowToast({
-                title: 'Category Updated',
-                message: `Category "${updatedCat.label}" has been updated.`,
-                type: 'info'
-              });
+          onSave={async (updatedCat) => {
+            try {
+              await onUpdateCategory(updatedCat);
+              if (onShowToast) {
+                onShowToast({
+                  title: 'Category Updated',
+                  message: `Category "${updatedCat.label}" has been updated.`,
+                  type: 'info'
+                });
+              }
+            } catch (err) {
+              if (onShowToast) onShowToast({ title: 'Update Failed', message: err.message, type: 'alert' });
             }
           }}
         />

@@ -16,7 +16,9 @@ export default function DashboardView({
   onVerifyMatch,
   onViewAllItems,
   onOpenBroadcastModal,
-  onFilterItemsByType
+  onFilterItemsByType,
+  breakdown,
+  categories
 }) {
   return (
     <div className="animate-fade-in">
@@ -80,7 +82,7 @@ export default function DashboardView({
       </div>
 
       {/* 4. Analytics & Recovery Trends Charts */}
-      <AnalyticsCharts />
+      <AnalyticsCharts breakdown={breakdown} categories={categories} />
     </div>
   );
 }

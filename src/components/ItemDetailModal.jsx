@@ -223,15 +223,21 @@ export default function ItemDetailModal({ item, onClose, onUpdateStatus, onTrigg
                             )}
                           </div>
                           <div style={{ display: 'flex', gap: '14px', fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Mail size={13} /> {person.email}</span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Phone size={13} /> {person.phone}</span>
+                            {person.email && (
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Mail size={13} /> {person.email}</span>
+                            )}
+                            {person.phone && person.phone !== person.email && (
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Phone size={13} /> {person.phone}</span>
+                            )}
                           </div>
                         </div>
 
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: '11px', color: '#64748B' }}>Trust Score</div>
-                          <div style={{ fontSize: '18px', fontWeight: 800, color: '#00A896' }}>{person.trustScore}%</div>
-                        </div>
+                        {person.trustScore != null && (
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '11px', color: '#64748B' }}>Trust Score</div>
+                            <div style={{ fontSize: '18px', fontWeight: 800, color: '#00A896' }}>{person.trustScore}%</div>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}

@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { Users, ShieldCheck, Search, Award, Star, Mail, Phone, CheckCircle } from 'lucide-react';
-import { mockUsers } from '../data/mockData';
+import { Users, ShieldCheck, Search, Award, Star, Mail, Phone, CheckCircle, Loader2 } from 'lucide-react';
 
-export default function UsersView() {
+export default function UsersView({ users = [], loading = false }) {
   const [search, setSearch] = useState('');
-  const [users, setUsers] = useState(mockUsers);
 
-  const filtered = users.filter(u => 
+  const filtered = users.filter(u =>
     u.name.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase()) ||
     u.role.toLowerCase().includes(search.toLowerCase())
@@ -53,7 +51,22 @@ export default function UsersView() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map(user => (
+            {loading && (
+              <tr>
+                <td colSpan={7} style={{ padding: '32px', textAlign: 'center', color: '#94A3B8' }}>
+                  <Loader2 size={16} className="animate-spin" style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+                  Loading registered users…
+                </td>
+              </tr>
+            )}
+            {!loading && filtered.length === 0 && (
+              <tr>
+                <td colSpan={7} style={{ padding: '32px', textAlign: 'center', color: '#94A3B8' }}>
+                  No users found{search ? ` matching "${search}"` : ' yet'}.
+                </td>
+              </tr>
+            )}
+            {!loading && filtered.map(user => (
               <tr key={user.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
                 <td style={{ padding: '14px 20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -100,9 +113,15 @@ export default function UsersView() {
                 </td>
 
                 <td style={{ padding: '14px 20px' }}>
-                  <span style={{ padding: '3px 10px', borderRadius: '12px', background: '#ECFDF5', color: '#059669', fontSize: '11.5px', fontWeight: 700 }}>
-                    Active
-                  </span>
+                  {user.status === 'active' ? (
+                    <span style={{ padding: '3px 10px', borderRadius: '12px', background: '#ECFDF5', color: '#059669', fontSize: '11.5px', fontWeight: 700 }}>
+                      Active
+                    </span>
+                  ) : (
+                    <span style={{ padding: '3px 10px', borderRadius: '12px', background: '#FEF2F2', color: '#991B1B', fontSize: '11.5px', fontWeight: 700, textTransform: 'capitalize' }}>
+                      {user.status}
+                    </span>
+                  )}
                 </td>
               </tr>
             ))}
