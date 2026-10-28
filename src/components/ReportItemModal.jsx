@@ -166,7 +166,7 @@ export default function ReportItemModal({ defaultType = 'lost', onClose, onSubmi
 
               {reportType === 'lost' && (
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">Reward Amount ($)</label>
+                  <label className="form-label">Reward Amount (LKR)</label>
                   <input
                     type="number"
                     className="form-input"

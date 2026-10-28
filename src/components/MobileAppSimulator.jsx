@@ -372,7 +372,7 @@ export default function MobileAppSimulator({ items = [], onClose }) {
                           </span>
                           {item.reward && (
                             <span style={{ fontSize: '8.5px', fontWeight: 700, color: '#D97706' }}>
-                              🏆 ${item.reward} reward
+                              🏆 LKR {item.reward} reward
                             </span>
                           )}
                         </div>

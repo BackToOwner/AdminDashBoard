@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   MapPin, 
@@ -15,11 +15,55 @@ import {
   Award
 } from 'lucide-react';
 
-export default function ItemDetailModal({ item, onClose, onUpdateStatus, onTriggerMatch }) {
-  if (!item) return null;
+export default function ItemDetailModal({
+  item,
+  onClose,
+  onUpdateStatus,
+  onTriggerMatch,
+  onGetReturnConfirmation,
+  onCloseCase,
+}) {
+  const [activeTab, setActiveTab] = useState('details');
+  const [currentStatus, setCurrentStatus] = useState(item?.status || 'open');
+  const [confirmationProgress, setConfirmationProgress] = useState(null);
+  const [confirmationLoading, setConfirmationLoading] = useState(false);
+  const [confirmationError, setConfirmationError] = useState('');
+  const [closingCase, setClosingCase] = useState(false);
 
-  const [activeTab, setActiveTab] = useState('details'); // 'details', 'verification', 'timeline'
-  const [currentStatus, setCurrentStatus] = useState(item.status || 'open');
+  useEffect(() => {
+    setCurrentStatus(item?.status || 'open');
+  }, [item?.id, item?.status]);
+
+  useEffect(() => {
+    let active = true;
+
+    if (!item || currentStatus !== 'returned' || !onGetReturnConfirmation) {
+      setConfirmationProgress(null);
+      setConfirmationError('');
+      setConfirmationLoading(false);
+      return () => { active = false; };
+    }
+
+    setConfirmationLoading(true);
+    setConfirmationError('');
+
+    onGetReturnConfirmation(item.id)
+      .then((progress) => {
+        if (active) setConfirmationProgress(progress);
+      })
+      .catch((error) => {
+        if (active) setConfirmationError(
+          error.message || 'Could not load participant confirmations.'
+        );
+      })
+      .finally(() => {
+        if (active) setConfirmationLoading(false);
+      });
+
+    return () => { active = false; };
+  }, [item?.id, currentStatus, onGetReturnConfirmation]);
+
+  if (!item) return null;
 
   const handleStatusChange = (newStatus) => {
     setCurrentStatus(newStatus);
@@ -78,7 +122,7 @@ export default function ItemDetailModal({ item, onClose, onUpdateStatus, onTrigg
             {item.reward && (
               <div style={{ background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)', border: '1px solid #F59E0B', borderRadius: '14px', padding: '10px 16px', textAlign: 'right' }}>
                 <div style={{ fontSize: '11px', fontWeight: 700, color: '#B45309', textTransform: 'uppercase' }}>Finder Reward</div>
-                <div style={{ fontSize: '20px', fontWeight: 800, color: '#92400E' }}>${item.reward}</div>
+                <div style={{ fontSize: '20px', fontWeight: 800, color: '#92400E' }}>LKR {item.reward}</div>
               </div>
             )}
           </div>
@@ -138,7 +182,7 @@ export default function ItemDetailModal({ item, onClose, onUpdateStatus, onTrigg
                   Current Case Status:
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  {['open', 'in_review', 'matched', 'returned'].map(statusKey => (
+                  {['open', 'in_review', 'returned'].map(statusKey => (
                     <button
                       key={statusKey}
                       onClick={() => handleStatusChange(statusKey)}
@@ -159,6 +203,63 @@ export default function ItemDetailModal({ item, onClose, onUpdateStatus, onTrigg
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {currentStatus === 'returned' && (
+            <div style={{
+              marginTop: '16px',
+              padding: '16px',
+              border: '1px solid #CBD5E1',
+              borderRadius: '12px',
+              background: '#F8FAFC',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>
+                    Participant return confirmations
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
+                    Both participants must confirm before the case can be closed.
+                  </div>
+                </div>
+                <div style={{ fontSize: '22px', fontWeight: 800, color: '#0F766E', whiteSpace: 'nowrap' }}>
+                  {confirmationLoading
+                    ? '…'
+                    : `${confirmationProgress?.confirmedCount ?? 0}/2`}
+                </div>
+              </div>
+
+              <div style={{ height: '8px', background: '#E2E8F0', borderRadius: '99px', marginTop: '12px', overflow: 'hidden' }}>
+                <div style={{
+                  width: `${Math.min(100, ((confirmationProgress?.confirmedCount ?? 0) / 2) * 100)}%`,
+                  height: '100%',
+                  background: '#0D9488',
+                  transition: 'width 0.2s ease',
+                }} />
+              </div>
+
+              {confirmationError && (
+                <div style={{ marginTop: '10px', color: '#B91C1C', fontSize: '12px' }}>
+                  {confirmationError}
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{ marginLeft: '8px', padding: '4px 10px' }}
+                    onClick={() => setCurrentStatus('in_review')}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
+
+              {!confirmationLoading && !confirmationError && (
+                <div style={{ marginTop: '10px', fontSize: '12px', color: '#475569' }}>
+                  {confirmationProgress?.canClose
+                    ? 'Both participants have confirmed. This case is ready to close.'
+                    : 'Waiting for both participants to confirm the return in the app.'}
+                </div>
+              )}
             </div>
           )}
 
@@ -260,14 +361,54 @@ export default function ItemDetailModal({ item, onClose, onUpdateStatus, onTrigg
           <button className="btn-secondary" onClick={onClose}>
             Close
           </button>
-          {item.status !== 'returned' && (
-            <button 
+          {currentStatus !== 'returned' && currentStatus !== 'closed' && (
+            <button
               className="btn-primary"
               onClick={() => handleStatusChange('returned')}
             >
               <CheckCircle2 size={16} />
-              <span>Confirm Return & Close Case</span>
+              <span>Mark as Returned</span>
             </button>
+          )}
+
+          {currentStatus === 'returned' && (
+            <button
+              className="btn-primary"
+              disabled={
+                closingCase ||
+                confirmationLoading ||
+                !confirmationProgress?.canClose ||
+                Boolean(confirmationError) ||
+                !onCloseCase
+              }
+              title={
+                confirmationProgress?.canClose
+                  ? 'Both participants have confirmed'
+                  : 'Requires confirmation from both participants'
+              }
+              onClick={async () => {
+                setClosingCase(true);
+                setConfirmationError('');
+                try {
+                  await onCloseCase(item.id);
+                } catch (error) {
+                  setConfirmationError(
+                    error.message || 'Could not close this case.'
+                  );
+                } finally {
+                  setClosingCase(false);
+                }
+              }}
+            >
+              <CheckCircle2 size={16} />
+              <span>{closingCase ? 'Closing Case…' : 'Close Case'}</span>
+            </button>
+          )}
+
+          {currentStatus === 'closed' && (
+            <span style={{ color: '#047857', fontWeight: 800, fontSize: '13px' }}>
+              CASE CLOSED
+            </span>
           )}
         </div>
       </div>

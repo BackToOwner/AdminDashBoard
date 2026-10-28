@@ -7,7 +7,8 @@ export const ReportStatus = {
   OPEN: 'open',
   IN_REVIEW: 'in_review',
   MATCHED: 'matched',
-  RETURNED: 'returned'
+  RETURNED: 'returned',
+  CLOSED: 'closed'
 };
 
 export const ReportType = {
@@ -49,7 +50,7 @@ export class ReportModel {
    * Format reward string
    */
   getFormattedReward() {
-    return this.reward ? `$${this.reward}` : null;
+    return this.reward ? `LKR ${this.reward}` : null;
   }
 
   /**

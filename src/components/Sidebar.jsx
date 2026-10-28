@@ -18,7 +18,8 @@ export default function Sidebar({
   setActiveView, 
   collapsed, 
   setCollapsed,
-  counts
+  counts,
+  admin
 }) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard Overview', icon: LayoutDashboard },
@@ -79,17 +80,30 @@ export default function Sidebar({
         })}
       </nav>
 
-      {/* Admin Profile Footer */}
+      {/* Logged-in Admin Profile Footer */}
       <div className="sidebar-footer">
-        <img 
-          src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80" 
-          alt="Ahmed Khalid" 
-          className="admin-avatar-mini" 
-        />
+        <div
+          className="admin-avatar-mini"
+          role="img"
+          aria-label={admin?.name || admin?.email || "Admin"}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            fontWeight: 700
+          }}
+        >
+          {(admin?.name || admin?.email || 'A').trim().charAt(0).toUpperCase()}
+        </div>
         {!collapsed && (
           <div className="admin-info-text">
-            <div className="admin-name">Ahmed Khalid</div>
-            <div className="admin-role-badge">Super Admin</div>
+            <div className="admin-name">
+              {admin?.name || admin?.email || 'Admin'}
+            </div>
+            <div className="admin-role-badge">
+              {admin?.role || 'Admin'}
+            </div>
           </div>
         )}
       </div>

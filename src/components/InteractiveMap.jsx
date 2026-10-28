@@ -111,7 +111,7 @@ export default function InteractiveMap({
                       {item.type}
                     </span>
                     {item.reward && (
-                      <span className="badge-reward">${item.reward} reward</span>
+                      <span className="badge-reward">LKR {item.reward} reward</span>
                     )}
                   </div>
                   <div style={{ fontWeight: 700, fontSize: '13px', color: '#0F172A', marginBottom: '3px' }}>

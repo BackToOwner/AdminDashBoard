@@ -63,15 +63,22 @@ export default function CategoryManager({
     return iconObj ? iconObj.component : Package;
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!categoryToDelete) return;
     const catName = categoryToDelete.label;
-    onDeleteCategory(categoryToDelete.id);
-    setCategoryToDelete(null);
-    if (onShowToast) {
-      onShowToast({
+
+    try {
+      await onDeleteCategory(categoryToDelete.id);
+      setCategoryToDelete(null);
+      onShowToast?.({
         title: 'Category Deleted',
         message: `Category "${catName}" has been removed from BackToOwner.`,
+        type: 'alert'
+      });
+    } catch (error) {
+      onShowToast?.({
+        title: 'Category Deletion Failed',
+        message: error.message || 'Could not delete this category.',
         type: 'alert'
       });
     }
@@ -236,13 +243,20 @@ export default function CategoryManager({
       {showAddModal && (
         <CategoryModal 
           onClose={() => setShowAddModal(false)}
-          onSave={(newCat) => {
-            onAddCategory(newCat);
-            if (onShowToast) {
-              onShowToast({
-                title: 'Category Created! 🎉',
-                message: `New category "${newCat.label}" is now live for mobile app users.`,
+          onSave={async (newCat) => {
+            try {
+              await onAddCategory(newCat);
+              setShowAddModal(false);
+              onShowToast?.({
+                title: 'Category Created!',
+                message: `Category "${newCat.label}" was saved successfully.`,
                 type: 'success'
+              });
+            } catch (error) {
+              onShowToast?.({
+                title: 'Category Creation Failed',
+                message: error.message || 'Could not save this category.',
+                type: 'alert'
               });
             }
           }}
@@ -254,13 +268,20 @@ export default function CategoryManager({
         <CategoryModal 
           category={editingCategory}
           onClose={() => setEditingCategory(null)}
-          onSave={(updatedCat) => {
-            onUpdateCategory(updatedCat);
-            if (onShowToast) {
-              onShowToast({
+          onSave={async (updatedCat) => {
+            try {
+              await onUpdateCategory(updatedCat);
+              setEditingCategory(null);
+              onShowToast?.({
                 title: 'Category Updated',
-                message: `Category "${updatedCat.label}" has been updated.`,
+                message: `Category "${updatedCat.label}" was updated successfully.`,
                 type: 'info'
+              });
+            } catch (error) {
+              onShowToast?.({
+                title: 'Category Update Failed',
+                message: error.message || 'Could not update this category.',
+                type: 'alert'
               });
             }
           }}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Radio, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Sparkles, ShieldCheck, ArrowRight } from 'lucide-react';
 import StatsOverview from '../components/StatsOverview';
 import QuickActions from '../components/QuickActions';
 import RecentReports from '../components/RecentReports';
@@ -11,11 +11,11 @@ export default function DashboardView({
   stats,
   items,
   matchPairs,
+  savedMatches = [],
   onSelectItem,
   onOpenMatchEngine,
   onVerifyMatch,
   onViewAllItems,
-  onOpenBroadcastModal,
   onFilterItemsByType
 }) {
   return (
@@ -34,47 +34,44 @@ export default function DashboardView({
               Lost Today, Found Tomorrow — Monitoring reports uploaded by mobile app users, tracking finders, and verifying smart matches.
             </p>
           </div>
-
-          <div className="hero-actions-group">
-            <button 
-              className="btn-primary"
-              onClick={onOpenBroadcastModal}
-              style={{ padding: '9px 18px', fontSize: '13px' }}
-            >
-              <Radio size={16} />
-              <span>Broadcast Area Alert</span>
-            </button>
-          </div>
-        </div>
+</div>
 
         {/* 4 Hero KPI Cards matching the mobile app stats */}
         <StatsOverview stats={stats} onSelectFilter={onFilterItemsByType} />
       </div>
 
       {/* 2. Quick Filter Feeds for User Uploads */}
-      <QuickActions 
+      <QuickActions
         onFilterType={onFilterItemsByType}
-        lostCount={items.filter(i => i.type === 'lost').length * 200 + 40}
-        foundCount={items.filter(i => i.type === 'found').length * 150 + 11}
+        lostCount={items.filter(
+          i => i.type === 'lost' &&
+            !['returned', 'closed'].includes(i.status)
+        ).length}
+        foundCount={items.filter(
+          i => i.type === 'found' &&
+            !['returned', 'closed'].includes(i.status)
+        ).length}
       />
 
       {/* 3. Two Column Grid: Recent User Reports & AI Match Hub */}
       <div className="dashboard-grid-2col">
         {/* Left Column: Recent Reports Feed */}
         <div>
-          <RecentReports 
-            reports={items} 
-            onSelectItem={onSelectItem} 
-            onViewAll={onViewAllItems} 
+          <RecentReports
+            reports={items}
+            matchPairs={matchPairs}
+            savedMatches={savedMatches}
+            onSelectItem={onSelectItem}
+            onViewAll={onViewAllItems}
           />
         </div>
 
         {/* Right Column: AI Smart Match Hub */}
         <div>
-          <MatchSuggestions 
-            matchPairs={matchPairs} 
-            onVerifyMatch={onVerifyMatch} 
-            onOpenMatchEngine={onOpenMatchEngine} 
+          <MatchSuggestions
+            matchPairs={matchPairs}
+            onVerifyMatch={onVerifyMatch}
+            onOpenMatchEngine={onOpenMatchEngine}
           />
         </div>
       </div>

@@ -18,21 +18,33 @@ export default function VerifyMatchModal({ matchPair, onClose, onConfirmMatch })
     setVerifiedFactors(next);
   };
 
-  const handleConfirm = () => {
-    // Trigger confetti
-    try {
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#00D2B4', '#0077EE', '#FF5252', '#F59E0B']
-      });
-    } catch (e) {
-      // ignore in test env
-    }
+  const [isConfirming, setIsConfirming] = useState(false);
 
-    onConfirmMatch(matchPair.id);
-    onClose();
+  const handleConfirm = async () => {
+    if (isConfirming) return;
+    setIsConfirming(true);
+
+    try {
+      const succeeded = await onConfirmMatch(matchPair.id);
+      if (succeeded === false) return;
+
+      try {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#00D2B4', '#0077EE', '#FF5252', '#F59E0B']
+        });
+      } catch (e) {
+        // Ignore confetti errors.
+      }
+
+      onClose();
+    } catch (error) {
+      console.error('Match confirmation failed:', error);
+    } finally {
+      setIsConfirming(false);
+    }
   };
 
   return (
@@ -73,7 +85,7 @@ export default function VerifyMatchModal({ matchPair, onClose, onConfirmMatch })
               </div>
               {matchPair.lostItem.reward && (
                 <div style={{ marginTop: '8px', fontSize: '12px', fontWeight: 700, color: '#D97706' }}>
-                  🏆 ${matchPair.lostItem.reward} Reward Offered
+                  🏆 LKR {matchPair.lostItem.reward} Reward Offered
                 </div>
               )}
             </div>
@@ -168,14 +180,15 @@ export default function VerifyMatchModal({ matchPair, onClose, onConfirmMatch })
 
         {/* Footer */}
         <div className="modal-footer">
-          <button className="btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn-secondary" onClick={onClose} disabled={isConfirming}>Cancel</button>
           <button 
             className="btn-primary" 
             onClick={handleConfirm}
+            disabled={isConfirming}
             style={{ padding: '10px 24px', fontSize: '14px' }}
           >
             <ShieldCheck size={16} />
-            <span>Approve Match & Dispatch Notifications</span>
+            <span>{isConfirming ? 'Verifying Match…' : 'Approve Match & Dispatch Notifications'}</span>
           </button>
         </div>
       </div>

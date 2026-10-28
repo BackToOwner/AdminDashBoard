@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { MapPin, Navigation, Layers, ShieldCheck, Radio, Sparkles } from 'lucide-react';
+import { MapPin, Navigation, Layers, ShieldCheck, Sparkles } from 'lucide-react';
 import InteractiveMap from '../components/InteractiveMap';
 
-export default function LiveMapView({ items, onSelectItem, onOpenBroadcastModal }) {
+export default function LiveMapView({ items, onSelectItem }) {
   return (
     <div className="animate-fade-in">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
@@ -12,12 +12,7 @@ export default function LiveMapView({ items, onSelectItem, onOpenBroadcastModal 
             Real-time geolocation tracking, proximity cluster analysis, and geofence alerts
           </p>
         </div>
-
-        <button className="btn-primary" onClick={onOpenBroadcastModal} style={{ gap: '8px' }}>
-          <Radio size={16} />
-          <span>Dispatch Area Alert</span>
-        </button>
-      </div>
+</div>
 
       <InteractiveMap 
         items={items} 

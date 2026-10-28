@@ -39,7 +39,10 @@ export function useMatchController(lostItems = []) {
    */
 
   const pendingLostItems = lostItems.filter(
-    (item) => item.status !== 'matched'
+    (item) =>
+      !['matched', 'returned', 'closed'].includes(
+        String(item.status || '').toLowerCase()
+      )
   );
 
   /*
@@ -149,7 +152,9 @@ export function useMatchController(lostItems = []) {
      */
 
     if (
-      lostItem.status === 'matched'
+      ['matched', 'returned', 'closed'].includes(
+        String(lostItem.status || '').toLowerCase()
+      )
     ) {
       console.log(
         'Skipping already verified/matched item:',
@@ -561,8 +566,16 @@ export function useMatchController(lostItems = []) {
       },
 
       foundItem: {
+        // Only use the canonical reports UUID for admin verification.
         id:
+          aiMatch.report_id,
+
+        // Preserve the AI table ID separately.
+        aiItemId:
           aiMatch.id,
+
+        reportId:
+          aiMatch.report_id || null,
 
         title:
           aiMatch.title ||
@@ -636,8 +649,9 @@ export function useMatchController(lostItems = []) {
         const itemsToScan =
           lostItems.filter(
             (item) =>
-              item.status !==
-              'matched'
+              !['matched', 'returned', 'closed'].includes(
+                String(item.status || '').toLowerCase()
+              )
           );
 
         console.log(
@@ -715,8 +729,9 @@ export function useMatchController(lostItems = []) {
                */
 
               if (
-                lostItem.status ===
-                'matched'
+                ['matched', 'returned', 'closed'].includes(
+                  String(lostItem.status || '').toLowerCase()
+                )
               ) {
                 console.log(
                   'Skipping matched item:',
@@ -771,7 +786,8 @@ export function useMatchController(lostItems = []) {
 
                     if (
                       !aiMatch ||
-                      !aiMatch.id
+                      !aiMatch.id ||
+                      !aiMatch.report_id
                     ) {
                       console.warn(
                         'Ignoring malformed AI match:',
@@ -937,8 +953,9 @@ export function useMatchController(lostItems = []) {
     const itemsToScan =
       lostItems.filter(
         (item) =>
-          item.status !==
-          'matched'
+          !['matched', 'returned', 'closed'].includes(
+            String(item.status || '').toLowerCase()
+          )
       );
 
     /*
@@ -1032,25 +1049,6 @@ export function useMatchController(lostItems = []) {
           console.error(
             'Match not found:',
             matchId
-          );
-
-          return null;
-        }
-
-        /*
-         * Never verify an already matched lost item.
-         */
-
-        if (
-          targetMatch.lostItem
-            ?.status ===
-          'matched'
-        ) {
-          console.warn(
-            'This lost item has already been verified:',
-            targetMatch
-              .lostItem
-              .id
           );
 
           return null;

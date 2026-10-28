@@ -18,11 +18,24 @@ export default function ItemsListView({
   items, 
   categories = [],
   onSelectItem,
-  initialType = 'all'
+  initialType = 'all',
+  resetFiltersKey = 0
 }) {
   const [search, setSearch] = useState('');
   const [selectedType, setSelectedType] = useState(initialType);
   const [selectedCategory, setSelectedCategory] = useState('all');
+
+  // Sync the type filter when navigation changes (e.g. See all).
+  React.useEffect(() => {
+    setSelectedType(initialType);
+  }, [initialType]);
+
+  React.useEffect(() => {
+    setSearch('');
+    setSelectedType(initialType);
+    setSelectedCategory('all');
+    setSelectedStatus('all');
+  }, [resetFiltersKey, initialType]);
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'grid'
 
@@ -227,7 +240,7 @@ export default function ItemsListView({
 
                   <td style={{ padding: '14px 20px' }}>
                     {item.reward ? (
-                      <span className="badge-reward">${item.reward}</span>
+                      <span className="badge-reward">LKR ${item.reward}</span>
                     ) : (
                       <span style={{ color: '#94A3B8' }}>—</span>
                     )}
@@ -269,7 +282,7 @@ export default function ItemsListView({
                 </span>
                 {item.reward && (
                   <span className="badge-reward" style={{ position: 'absolute', top: '10px', right: '10px' }}>
-                    ${item.reward} reward
+                    LKR ${item.reward} reward
                   </span>
                 )}
               </div>

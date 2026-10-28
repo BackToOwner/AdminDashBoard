@@ -25,38 +25,61 @@ export function useReportController() {
         `${API_BASE_URL}/reports`
       );
 
-      const response = await fetch(
-        `${API_BASE_URL}/reports`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
       console.log(
-        'Reports API status:',
-        response.status
+        'Fetching all reports from:',
+        `${API_BASE_URL}/reports`
       );
 
-      const result = await response.json();
+      const allReportData = [];
+      let result;
+      let page = 1;
+      let totalPages = 1;
 
-      console.log(
-        'REPORT API RESULT:',
-        result
-      );
-
-      if (!response.ok || !result.success) {
-        throw new Error(
-          result.message ||
-          result.error ||
-          `Failed to load reports (${response.status})`
+      do {
+        const response = await fetch(
+          `${API_BASE_URL}/reports?page=${page}&pageSize=100`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
-      }
 
-      const loadedReports = (result.data || []).map(
+        console.log(
+          `Reports API page ${page} status:`,
+          response.status
+        );
+
+        const pageResult = await response.json();
+
+        if (!response.ok || !pageResult.success) {
+          throw new Error(
+            pageResult.message ||
+            pageResult.error ||
+            `Failed to load reports page ${page} (${response.status})`
+          );
+        }
+
+        result = pageResult;
+        allReportData.push(...(pageResult.data || []));
+        totalPages = Math.max(
+          Number(pageResult.pagination?.totalPages) || 1,
+          1
+        );
+
+        console.log(
+          `Loaded report page ${page} of ${totalPages}`
+        );
+
+        page += 1;
+      } while (page <= totalPages);
+
+      console.log('REPORT API RESULT:', result);
+      console.log('Total report records fetched:', allReportData.length);
+
+      const loadedReports = allReportData.map(
         (data) =>
           new ReportModel({
             ...data,
@@ -216,6 +239,72 @@ export function useReportController() {
 
 
   // ==================================================
+  // RETURN CONFIRMATION AND CASE CLOSURE
+  // ==================================================
+
+  const getReturnConfirmationProgress = useCallback(async (reportId) => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) throw new Error('Admin authentication required');
+
+    const response = await fetch(
+      `${API_BASE_URL}/reports/${reportId}/return-confirmation`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(
+        result.message || result.error ||
+        `Failed to load return confirmations (${response.status})`
+      );
+    }
+
+    return result.data;
+  }, []);
+
+  const closeMatchedCase = useCallback(async (reportId) => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) throw new Error('Admin authentication required');
+
+    const response = await fetch(
+      `${API_BASE_URL}/reports/${reportId}/close-case`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(
+        result.message || result.error ||
+        `Failed to close case (${response.status})`
+      );
+    }
+
+    const closedIds = result.data?.closedReportIds || [reportId];
+    setReports((currentReports) =>
+      currentReports.map((report) =>
+        closedIds.includes(report.id)
+          ? new ReportModel({ ...report, status: 'closed' })
+          : report
+      )
+    );
+
+    return result.data;
+  }, []);
+
+
+  // ==================================================
   // CSV EXPORT
   // ==================================================
 
@@ -265,6 +354,8 @@ export function useReportController() {
     setActiveFilterType,
 
     updateReportStatus,
+    getReturnConfirmationProgress,
+    closeMatchedCase,
 
     exportReportsToCsv,
 

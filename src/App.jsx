@@ -2,6 +2,8 @@ import React, {
   useMemo
 } from 'react';
 
+import { API_BASE_URL } from './config';
+
 import AdminLogin from './components/AdminLogin';
 
 import {
@@ -19,7 +21,6 @@ import Topbar from './components/Topbar';
 import Toast from './components/Toast';
 import ItemDetailModal from './components/ItemDetailModal';
 import VerifyMatchModal from './components/VerifyMatchModal';
-import BroadcastModal from './components/BroadcastModal';
 import CategoryManager from './components/CategoryManager';
 
 // Page Views
@@ -118,6 +119,110 @@ export default function App() {
     });
 
 
+  // Persistent match records loaded from the authenticated backend.
+  const [savedMatches, setSavedMatches] = React.useState([]);
+  const [savedMatchesLoading, setSavedMatchesLoading] = React.useState(false);
+  const [savedMatchesError, setSavedMatchesError] = React.useState('');
+
+  // Count unique AI suggestions and saved pending matches together.
+  // Match identity uses the real Lost/Found report IDs, never the
+  // synthetic AI candidate ID.
+  const pendingMatchCount = useMemo(() => {
+    const getPairKey = (match) => {
+      const lostId = match?.lostItem?.id;
+      const foundId = match?.foundItem?.id;
+
+      if (lostId == null || foundId == null) return null;
+
+      return JSON.stringify([String(lostId), String(foundId)]);
+    };
+
+    const savedPairKeys = new Set();
+    const pendingPairKeys = new Set();
+
+    for (const match of savedMatches) {
+      const key = getPairKey(match);
+      if (!key) continue;
+
+      savedPairKeys.add(key);
+
+      if (
+        String(match.status || '').toLowerCase() ===
+        'pending_admin_approval'
+      ) {
+        pendingPairKeys.add(key);
+      }
+    }
+
+    for (const pair of matchCtrl.matchPairs || []) {
+      const key = getPairKey(pair);
+      if (!key) continue;
+
+      // Any existing saved record means this AI suggestion must not
+      // be counted separately. Saved pending records were counted above;
+      // approved/rejected/closed records are not awaiting review.
+      if (savedPairKeys.has(key)) continue;
+
+      pendingPairKeys.add(key);
+    }
+
+    return pendingPairKeys.size;
+  }, [savedMatches, matchCtrl.matchPairs]);
+
+  const displayedStats = useMemo(
+    () => ({
+      ...dashboard.stats,
+      pendingMatches: pendingMatchCount,
+    }),
+    [dashboard.stats, pendingMatchCount]
+  );
+
+  const refreshSavedMatches = async () => {
+    const token = localStorage.getItem('adminToken');
+
+    if (!token) {
+      setSavedMatchesError('Admin authentication required. Please sign in again.');
+      setSavedMatches([]);
+      return false;
+    }
+
+    setSavedMatchesLoading(true);
+    setSavedMatchesError('');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/matches?status=all`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.message || result.error || `Failed to load matches (${response.status})`
+        );
+      }
+
+      setSavedMatches(Array.isArray(result.data) ? result.data : []);
+      return true;
+    } catch (error) {
+      console.error('Failed to fetch saved matches:', error);
+      setSavedMatchesError(error.message || 'Could not load saved match records.');
+      return false;
+    } finally {
+      setSavedMatchesLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (admin && dashboard.activeView === 'matches') {
+      refreshSavedMatches();
+    }
+  }, [admin, dashboard.activeView]);
+
+
   const handleLogin =
     (loggedInAdmin) => {
 
@@ -199,7 +304,7 @@ export default function App() {
               'Case Successfully Resolved! 🎉',
 
             message:
-              'Item has been verified and returned to owner. Case closed.',
+              'Return recorded. The case can be closed after both participants confirm.',
 
             type:
               'success'
@@ -245,6 +350,35 @@ export default function App() {
         });
       }
     };
+
+
+  // ============================================================
+  // CLOSE CASE AFTER BOTH PARTICIPANTS CONFIRM
+  // ============================================================
+
+  const handleCloseMatchedCase = async (reportId) => {
+    try {
+      const result = await reportCtrl.closeMatchedCase(reportId);
+      await reportCtrl.refreshReports();
+
+      notifCtrl.showToast({
+        title: 'Case Closed',
+        message: 'Both participants confirmed the return. The matched case is now closed.',
+        type: 'success',
+      });
+
+      reportCtrl.setSelectedReport(null);
+      return result;
+    } catch (error) {
+      console.error('Failed to close matched case:', error);
+      notifCtrl.showToast({
+        title: 'Could Not Close Case',
+        message: error.message || 'Both participants must confirm before closure.',
+        type: 'error',
+      });
+      throw error;
+    }
+  };
 
 
   // ============================================================
@@ -333,43 +467,135 @@ export default function App() {
       try {
 
         // ======================================================
-        // GET LOST ITEM ID
+        // VALIDATE THE REAL LOST AND FOUND REPORTS
         // ======================================================
 
-        const lostItemId =
-          approvedMatch
-            .lostItem
-            .id;
+        const lostItemId = approvedMatch.lostItem?.id;
+        const foundItemId = approvedMatch.foundItem?.id;
 
-
-        console.log(
-          'Updating lost item:',
-          lostItemId
+        const lostReport = reportCtrl.reports.find(
+          (item) => item.id === lostItemId && item.type === 'lost'
         );
 
+        const foundReport = reportCtrl.reports.find(
+          (item) => item.id === foundItemId && item.type === 'found'
+        );
+
+        if (!lostReport || !foundReport) {
+          throw new Error(
+            'The AI candidate could not be verified against the real Lost and Found reports. No match was saved.'
+          );
+        }
+
+        if (
+          ['returned', 'closed'].includes(String(lostReport.status || '').toLowerCase()) ||
+          ['returned', 'closed'].includes(String(foundReport.status || '').toLowerCase())
+        ) {
+          throw new Error(
+            'This report pair already contains a returned or closed case.'
+          );
+        }
+
+        const token = localStorage.getItem('adminToken');
+
+        if (!token) {
+          throw new Error('Admin authentication required');
+        }
+
+        const requestOptions = {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        };
 
         // ======================================================
-        // UPDATE SUPABASE
+        // FIND OR CREATE THE PERSISTENT MATCH IN SUPABASE
         // ======================================================
 
-        /**
-         * IMPORTANT:
-         *
-         * Only the LOST item is updated.
-         *
-         * status = matched
-         */
+        const listResponse = await fetch(
+          `${API_BASE_URL}/matches?status=all`,
+          requestOptions
+        );
+        const listResult = await listResponse.json();
 
-        await reportCtrl.updateReportStatus(
+        if (!listResponse.ok || !listResult.success) {
+          throw new Error(
+            listResult.message || 'Could not load existing matches.'
+          );
+        }
+
+        const existingMatch = (listResult.data || []).find((match) =>
+          match.lostItem?.id === lostItemId &&
+          match.foundItem?.id === foundItemId
+        );
+
+        if (existingMatch?.status === 'rejected') {
+          throw new Error(
+            'This exact report pair was previously rejected. It was not automatically reopened.'
+          );
+        }
+
+        let persistentMatch = existingMatch;
+
+        if (!persistentMatch) {
+          const createResponse = await fetch(
+            `${API_BASE_URL}/matches`,
+            {
+              ...requestOptions,
+              method: 'POST',
+              body: JSON.stringify({
+                lostItemId,
+                foundItemId,
+                matchScore: approvedMatch.matchScore,
+                matchFactors: approvedMatch.matchFactors || []
+              })
+            }
+          );
+
+          const createResult = await createResponse.json();
+
+          if (!createResponse.ok || !createResult.success) {
+            throw new Error(
+              createResult.message ||
+              createResult.error ||
+              'Could not save the verified match.'
+            );
+          }
+
+          persistentMatch = createResult.data;
+        }
+
+        // ======================================================
+        // APPROVE THE PERSISTENT MATCH
+        // The backend updates BOTH report statuses to matched.
+        // ======================================================
+
+        if (persistentMatch.status !== 'approved') {
+          const approveResponse = await fetch(
+            `${API_BASE_URL}/matches/${persistentMatch.id}/approve`,
+            {
+              ...requestOptions,
+              method: 'POST'
+            }
+          );
+
+          const approveResult = await approveResponse.json();
+
+          if (!approveResponse.ok || !approveResult.success) {
+            throw new Error(
+              approveResult.message ||
+              approveResult.error ||
+              'The match was saved but could not be approved.'
+            );
+          }
+        }
+
+        console.log(
+          'Verified Lost and Found reports are linked in Supabase:',
           lostItemId,
-          'matched'
+          foundItemId
         );
-
-
-        console.log(
-          'Lost item successfully marked as matched.'
-        );
-
 
         // ======================================================
         // REFRESH REPORTS
@@ -381,6 +607,7 @@ export default function App() {
 
 
         await reportCtrl.refreshReports();
+        await refreshSavedMatches();
 
 
         console.log(
@@ -443,6 +670,8 @@ export default function App() {
           '===================================='
         );
 
+        return true;
+
       } catch (error) {
 
         console.error(
@@ -463,6 +692,8 @@ export default function App() {
           type:
             'error'
         });
+
+        return false;
       }
     };
 
@@ -497,6 +728,7 @@ export default function App() {
           ====================================================== */}
 
       <Sidebar
+        admin={admin}
 
         activeView={
           dashboard.activeView
@@ -521,8 +753,7 @@ export default function App() {
               .activeCases,
 
           pendingMatches:
-            dashboard.stats
-              .pendingMatches,
+            pendingMatchCount,
 
           categoryCount:
             categoryCtrl.categories.filter(
@@ -544,6 +775,8 @@ export default function App() {
             ==================================================== */}
 
         <Topbar
+          admin={admin}
+          onLogout={handleLogout}
 
           searchQuery={
             dashboard.globalSearch
@@ -561,11 +794,9 @@ export default function App() {
             notifCtrl.markNotificationRead
           }
 
-          onOpenBroadcastModal={() =>
-            notifCtrl.setShowBroadcastModal(
-              true
-            )
-          }
+          notificationsLoading={notifCtrl.notificationsLoading}
+          notificationsError={notifCtrl.notificationsError}
+          onRetryNotifications={notifCtrl.refreshNotifications}
         />
 
 
@@ -585,7 +816,7 @@ export default function App() {
             <DashboardView
 
               stats={
-                dashboard.stats
+                displayedStats
               }
 
               items={
@@ -595,6 +826,11 @@ export default function App() {
               matchPairs={
                 matchCtrl.matchPairs
               }
+              savedMatches={savedMatches}
+              savedMatchesLoading={savedMatchesLoading}
+              savedMatchesError={savedMatchesError}
+              onRefreshSavedMatches={refreshSavedMatches}
+
 
               onSelectItem={
                 (item) =>
@@ -626,12 +862,6 @@ export default function App() {
                   'items'
                 );
               }}
-
-              onOpenBroadcastModal={() =>
-                notifCtrl.setShowBroadcastModal(
-                  true
-                )
-              }
 
               onFilterItemsByType={
                 handleFilterItemsByType
@@ -883,6 +1113,14 @@ export default function App() {
           onUpdateStatus={
             handleResolveCase
           }
+
+          onGetReturnConfirmation={
+            reportCtrl.getReturnConfirmationProgress
+          }
+
+          onCloseCase={
+            handleCloseMatchedCase
+          }
         />
       )}
 
@@ -910,30 +1148,7 @@ export default function App() {
           }
         />
       )}
-
-
-      {/* ======================================================
-          BROADCAST MODAL
-          ====================================================== */}
-
-      {notifCtrl.showBroadcastModal && (
-
-        <BroadcastModal
-
-          onClose={() =>
-            notifCtrl.setShowBroadcastModal(
-              false
-            )
-          }
-
-          onSendBroadcast={
-            notifCtrl.dispatchGeoBroadcast
-          }
-        />
-      )}
-
-
-      {/* ======================================================
+{/* ======================================================
           TOAST
           ====================================================== */}
 

@@ -5,12 +5,12 @@ export default function QuickActions({ onFilterType, lostCount = 1840, foundCoun
   return (
     <div className="quick-actions-row">
       {/* 1. Lost Items Uploaded by Mobile Users (Coral Card) */}
-      <div 
+      <div
         className="quick-action-card quick-action-lost"
         onClick={() => onFilterType && onFilterType('lost')}
       >
         <div>
-          <div className="action-card-emoji">🥺</div>
+
           <div className="action-card-title">Lost Items Feed</div>
           <div className="action-card-desc">Uploaded by mobile app users • Active search cases</div>
         </div>
@@ -22,12 +22,12 @@ export default function QuickActions({ onFilterType, lostCount = 1840, foundCoun
       </div>
 
       {/* 2. Found Items Uploaded by Finders (Emerald Card) */}
-      <div 
+      <div
         className="quick-action-card quick-action-found"
         onClick={() => onFilterType && onFilterType('found')}
       >
         <div>
-          <div className="action-card-emoji">🎉</div>
+
           <div className="action-card-title">Found Items Feed</div>
           <div className="action-card-desc">Turned in by finders & transit officers • Ready to claim</div>
         </div>

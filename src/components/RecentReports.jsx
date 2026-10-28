@@ -18,16 +18,48 @@ import {
 
 export default function RecentReports({ 
   reports = [], 
+  matchPairs = [],
+  savedMatches = [],
   onSelectItem, 
   onViewAll 
 }) {
   const [filterType, setFilterType] = useState('all'); // 'all', 'lost', 'found', 'matched'
+  const aiSuggestedReportIds = new Set(
+    matchPairs
+      .flatMap(pair => [pair?.lostItem?.id, pair?.foundItem?.id])
+      .filter(id => id != null)
+      .map(String)
+  );
+
+  // Only persistent, approved matches count as verified matches.
+  const approvedReportIds = new Set(
+    savedMatches
+      .filter(match => match?.status === 'approved')
+      .flatMap(match => [match?.lostItem?.id, match?.foundItem?.id])
+      .filter(id => id != null)
+      .map(String)
+  );
 
   const filteredReports = reports.filter(item => {
+    // Hide returned/closed cases from every Recent Reports tab.
+    if (['returned', 'closed'].includes(item.status)) {
+      return false;
+    }
+
     if (filterType === 'all') return true;
     if (filterType === 'lost') return item.type === 'lost';
     if (filterType === 'found') return item.type === 'found';
-    if (filterType === 'matched') return item.matched;
+
+    // Keep active AI-matched cases visible until they are resolved.
+    if (filterType === 'matched') {
+      return (
+        item.matched ||
+        item.status === 'matched' ||
+        approvedReportIds.has(String(item.id)) ||
+        aiSuggestedReportIds.has(String(item.id))
+      );
+    }
+
     return true;
   });
 
@@ -119,10 +151,18 @@ export default function RecentReports({
               <div className="feed-item-info">
                 <div className="feed-item-title-row">
                   <span className="feed-item-title">{item.title}</span>
-                  {item.matched && (
+                  {(item.matched ||
+                    item.status === 'matched' ||
+                    approvedReportIds.has(String(item.id)) ||
+                    aiSuggestedReportIds.has(String(item.id))) && (
                     <span className="badge-matched">
                       <Sparkles size={11} />
-                      MATCHED
+                      {aiSuggestedReportIds.has(String(item.id)) &&
+                      !approvedReportIds.has(String(item.id)) &&
+                      !item.matched &&
+                      item.status !== 'matched'
+                        ? 'AI SUGGESTION · PENDING'
+                        : 'MATCHED'}
                     </span>
                   )}
                 </div>
@@ -144,7 +184,7 @@ export default function RecentReports({
               {/* Reward Badge if present */}
               {item.reward && (
                 <span className="badge-reward">
-                  🏆 ${item.reward} reward
+                  🏆 LKR {item.reward} reward
                 </span>
               )}
 

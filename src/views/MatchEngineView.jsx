@@ -13,6 +13,10 @@ import {
 export default function MatchEngineView({
   matchPairs = [],
   lostItems = [],
+  savedMatches = [],
+  savedMatchesLoading = false,
+  savedMatchesError = '',
+  onRefreshSavedMatches,
   onVerifyMatch,
   onRunAutoMatch,
   isScanning,
@@ -149,8 +153,9 @@ export default function MatchEngineView({
        * Already reconciled in Supabase.
        */
       if (
-        String(item.status || '')
-          .toLowerCase() === 'matched'
+        ['matched', 'returned', 'closed'].includes(
+          String(item.status || '').toLowerCase()
+        )
       ) {
         return false;
       }

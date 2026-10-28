@@ -11,10 +11,10 @@ import {
 export default function StatsOverview({ stats, onSelectFilter }) {
   return (
     <div className="hero-stats-grid">
-      {/* 1. Items Returned */}
+      {/* 1. Items Closed */}
       <div 
         className="stat-kpi-card"
-        onClick={() => onSelectFilter && onSelectFilter('returned')}
+        onClick={() => onSelectFilter && onSelectFilter('closed')}
       >
         <div className="stat-card-header">
           <div className="stat-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.18)', color: '#34D399' }}>
@@ -22,11 +22,11 @@ export default function StatsOverview({ stats, onSelectFilter }) {
           </div>
           <span className="stat-trend-tag trend-up">
             <TrendingUp size={11} />
-            {stats.itemsReturnedTrend}
+            {stats.itemsClosedTrend}
           </span>
         </div>
-        <div className="stat-value">{stats.itemsReturned.toLocaleString()}</div>
-        <div className="stat-label">Items Returned to Owners</div>
+        <div className="stat-value">{stats.itemsClosed.toLocaleString()}</div>
+        <div className="stat-label">Items Successfully Closed</div>
         <div style={{ marginTop: '8px', height: '3px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
           <div style={{ width: '92%', height: '100%', background: 'linear-gradient(90deg, #10B981, #00D2B4)', borderRadius: '2px' }}></div>
         </div>
